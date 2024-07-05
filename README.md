@@ -9,6 +9,8 @@ Typically, token lockers are one-time use, so for each token lock, a new contrac
 
 I decided to make a smart contract with which you can lock different tokens as many times as you like, specify different recipients, and a different timestamp for each.
 
+---
+
 ## You might also be interested in:
 
 [![automate crypto trading](banner.png)](https://t.me/get_matrixbot?start=github_org)
