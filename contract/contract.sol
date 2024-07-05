@@ -60,11 +60,6 @@ contract TokenLocker {
         emit TokensUnlocked(_recipient, totalUnlockedAmount);
     }
 
-    function recoverTokens(uint256 _amount) external onlyOwner {
-        require(_amount <= address(this).balance, "Insufficient balance");
-        payable(owner).transfer(_amount);
-    }
-
     function getBalance() external view returns (uint256) {
         return address(this).balance;
     }
