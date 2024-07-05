@@ -20,6 +20,8 @@ contract TokenLocker is Ownable {
     event TokensLocked(address indexed recipient, uint256 unlockTimestamp, uint256 amount, address indexed token);
     event TokensUnlocked(address indexed recipient, uint256 amount, address indexed token);
 
+    constructor() Ownable(msg.sender) {}
+
     function lockTokens(address _recipient, uint256 _unlockTimestamp, uint256 _amount, address _token) external onlyOwner {
         require(_recipient != address(0), "Invalid recipient address");
         require(_amount > 0, "Amount must be greater than zero");
