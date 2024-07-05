@@ -11,9 +11,6 @@ contract TokenLocker {
 
     mapping(address => Lock[]) public locks;
 
-    event TokensLocked(address indexed recipient, uint256 unlockTimestamp, uint256 amount);
-    event TokensUnlocked(address indexed recipient, uint256 amount);
-
     modifier onlyOwner() {
         require(msg.sender == owner, "Not the contract owner");
         _;
@@ -34,7 +31,6 @@ contract TokenLocker {
 
         // Lock the tokens
         locks[_recipient].push(Lock(_unlockTimestamp, msg.value));
-        emit TokensLocked(_recipient, _unlockTimestamp, msg.value);
     }
 
     function unlockTokens(address _recipient) external {
@@ -57,7 +53,6 @@ contract TokenLocker {
 
         // Transfer unlocked tokens to the recipient
         payable(_recipient).transfer(totalUnlockedAmount);
-        emit TokensUnlocked(_recipient, totalUnlockedAmount);
     }
 
     function getBalance() external view returns (uint256) {
