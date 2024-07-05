@@ -11,6 +11,7 @@ I decided to make a smart contract with which you can lock different tokens as m
 
 ## You might also be interested in:
 
+[![automate crypto trading](banner.png)](https://t.me/get_matrixbot?start=github_org)
 
 **keywords**:
 * token locker, coin smart contract, token contract,
