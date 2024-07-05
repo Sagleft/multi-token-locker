@@ -39,31 +39,25 @@ contract TokenLocker is CustomOwnable {
     function unlockTokens(address _recipient, address _token) external {
         Lock[] storage userLocks = locks[_recipient];
         uint256 totalUnlockedAmount;
-        uint256 length = userLocks.length;
-        uint256[] memory indicesToRemove = new uint256[](length);
-        uint256 removeCount = 0;
 
-        // get total amount
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < userLocks.length; i++) {
             if (userLocks[i].unlockTimestamp <= block.timestamp && userLocks[i].token == _token) {
                 totalUnlockedAmount += userLocks[i].amount;
-                indicesToRemove[removeCount] = i;
-                removeCount++;
+                delete userLocks[i];
             }
         }
 
         require(totalUnlockedAmount > 0, "No tokens to unlock");
 
-        // try transfer
-        IERC20(_token).safeTransfer(_recipient, totalUnlockedAmount);
-        emit TokensUnlocked(_recipient, totalUnlockedAmount, _token);
+        // Transfer unlocked tokens to the recipient
+        IERC20(_token).transfer(_recipient, totalUnlockedAmount);
 
-        for (uint256 i = 0; i < removeCount; i++) {
-            uint256 indexToRemove = indicesToRemove[i];
-            if (indexToRemove != userLocks.length - 1) {
-                userLocks[indexToRemove] = userLocks[userLocks.length - 1];
+        for (uint256 i = 0; i < userLocks.length; i++) {
+            if (userLocks[i].unlockTimestamp <= block.timestamp && userLocks[i].token == _token) {
+                delete userLocks[i];
             }
-            userLocks.pop();
         }
+
+        emit TokensUnlocked(_recipient, totalUnlockedAmount, _token);
     }
 }
