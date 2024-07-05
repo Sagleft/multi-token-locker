@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 contract TokenLocker {
     address public owner;
 
-    uint256 constant MAX_LOCKS_PER_RECIPIENT = 20;
-
     struct Lock {
         address tokenAddress;
         uint256 unlockTimestamp; // seconds
