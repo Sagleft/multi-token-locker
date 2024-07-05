@@ -3,13 +3,16 @@ pragma solidity ^0.8.0;
 
 contract TokenLocker {
     address public owner;
-    
+
+    uint256 constant MAX_LOCKS_PER_RECIPIENT = 20;
+
     struct Lock {
+        address tokenAddress;
         uint256 unlockTimestamp; // seconds
         uint256 amount;
     }
 
-    mapping(address => Lock[]) public locks;
+    mapping(address => Lock) public locks;
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Not the contract owner");
@@ -25,34 +28,31 @@ contract TokenLocker {
         owner = newOwner;
     }
 
-    function lockTokens(address _recipient, uint256 _unlockTimestamp) external payable onlyOwner {
+    function lockTokens(address _recipient, address _tokenAddress, uint256 _unlockTimestamp) external payable onlyOwner {
         require(_recipient != address(0), "Invalid recipient address");
+        require(_tokenAddress != address(0), "Invalid token address");
         require(msg.value > 0, "Amount must be greater than zero");
 
+        // Check if a lock already exists for this recipient and token
+        require(locks[_recipient].unlockTimestamp == 0, "Lock already exists for this recipient");
+
         // Lock the tokens
-        locks[_recipient].push(Lock(_unlockTimestamp, msg.value));
+        locks[_recipient] = Lock(_tokenAddress, _unlockTimestamp, msg.value);
     }
 
-    function unlockTokens(address _recipient) external {
-        Lock[] storage userLocks = locks[_recipient];
-        uint256 totalUnlockedAmount = 0;
-        uint256 i = 0;
+    function unlockTokens(address _recipient, address _tokenAddress) external {
+        Lock storage userLock = locks[_recipient];
+        require(userLock.unlockTimestamp != 0, "No lock found for this recipient");
+        require(userLock.tokenAddress == _tokenAddress, "Token address mismatch");
+        require(userLock.unlockTimestamp <= block.timestamp, "Lock not yet expired");
 
-        while (i < userLocks.length) {
-            if (userLocks[i].unlockTimestamp <= block.timestamp) {
-                totalUnlockedAmount += userLocks[i].amount;
-                // Перемещаем последний элемент на место текущего
-                userLocks[i] = userLocks[userLocks.length - 1];
-                userLocks.pop();
-            } else {
-                i++;
-            }
-        }
-
-        require(totalUnlockedAmount > 0, "No tokens to unlock");
+        uint256 amountToTransfer = userLock.amount;
+        
+        // Clear the lock
+        delete locks[_recipient];
 
         // Transfer unlocked tokens to the recipient
-        payable(_recipient).transfer(totalUnlockedAmount);
+        payable(_recipient).transfer(amountToTransfer);
     }
 
     function getBalance() external view returns (uint256) {
