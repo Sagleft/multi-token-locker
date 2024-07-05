@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 contract TokenLocker {
     address public owner;
 
@@ -38,10 +40,9 @@ contract TokenLocker {
         locks[_recipient] = Lock(_tokenAddress, _unlockTimestamp, msg.value);
     }
 
-    function unlockTokens(address _recipient, address _tokenAddress) external {
+    function unlockTokens(address _recipient) external payable {
         Lock storage userLock = locks[_recipient];
         require(userLock.unlockTimestamp != 0, "No lock found for this recipient");
-        require(userLock.tokenAddress == _tokenAddress, "Token address mismatch");
         require(userLock.unlockTimestamp <= block.timestamp, "Lock not yet expired");
 
         uint256 amountToTransfer = userLock.amount;
@@ -50,7 +51,8 @@ contract TokenLocker {
         delete locks[_recipient];
 
         // Transfer unlocked tokens to the recipient
-        payable(_recipient).transfer(amountToTransfer);
+        IERC20 token = IERC20(userLock.tokenAddress);
+        require(token.transfer(_recipient, _amount), "Token transfer failed");
     }
 
     function getBalance() external view returns (uint256) {
