@@ -18,12 +18,9 @@ contract TokenLocker is CustomOwnable {
 
     mapping(address => Lock[]) public locks;
 
-    event TokensLocked(address indexed recipient, uint256 unlockTimestamp, uint256 amount, address indexed token);
-    event TokensUnlocked(address indexed recipient, uint256 amount, address indexed token);
-
     constructor() Ownable(msg.sender) {}
 
-    function lockTokens(address _recipient, uint256 _unlockTimestamp, uint256 _amount, address _token) external onlyOwner {
+    function lockTokens(address _recipient, uint256 _unlockTimestamp, uint256 _amount, address _token) external payable onlyOwner {
         require(_recipient != address(0), "Invalid recipient address");
         require(_amount > 0, "Amount must be greater than zero");
 
@@ -33,31 +30,35 @@ contract TokenLocker is CustomOwnable {
 
         // Lock the tokens
         locks[_recipient].push(Lock(_recipient, _unlockTimestamp, _amount, _token));
-        emit TokensLocked(_recipient, _unlockTimestamp, _amount, _token);
     }
 
-    function unlockTokens(address _recipient, address _token) external {
+    function unlockTokens(address _recipient, address _token) external payable {
         Lock[] storage userLocks = locks[_recipient];
         uint256 totalUnlockedAmount;
+        uint256 length = userLocks.length;
+        uint256[] memory indicesToRemove = new uint256[](length);
+        uint256 removeCount = 0;
 
-        for (uint256 i = 0; i < userLocks.length; i++) {
-            if (userLocks[i].unlockTimestamp <= block.timestamp && userLocks[i].token == _token) {
+        // get total amount
+        for (uint256 i = 0; i < length; i++) {
+            if (userLocks[i].unlockTimestamp <= block.timestamp) {
                 totalUnlockedAmount += userLocks[i].amount;
-                delete userLocks[i];
+                indicesToRemove[removeCount] = i;
+                removeCount++;
             }
         }
 
         require(totalUnlockedAmount > 0, "No tokens to unlock");
 
-        // Transfer unlocked tokens to the recipient
-        IERC20(_token).transfer(_recipient, totalUnlockedAmount);
+        // try transfer
+        IERC20(_token).safeTransfer(_recipient, totalUnlockedAmount);
 
-        for (uint256 i = 0; i < userLocks.length; i++) {
-            if (userLocks[i].unlockTimestamp <= block.timestamp && userLocks[i].token == _token) {
-                delete userLocks[i];
+        for (uint256 i = 0; i < removeCount; i++) {
+            uint256 indexToRemove = indicesToRemove[i];
+            if (indexToRemove != userLocks.length - 1) {
+                userLocks[indexToRemove] = userLocks[userLocks.length - 1];
             }
+            userLocks.pop();
         }
-
-        emit TokensUnlocked(_recipient, totalUnlockedAmount, _token);
     }
 }
