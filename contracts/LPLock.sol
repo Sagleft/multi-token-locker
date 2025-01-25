@@ -8,14 +8,13 @@ contract LPLock {
     using SafeERC20 for IERC20;
 
     address public owner;
-    uint256 public lockDuration;
-    uint256 public unlockTimestamp;
-    mapping(address => uint256) public lockedBalances;
+    mapping(address => uint256) public lockedBalances;   // token address -> amount
+    mapping(address => uint256) public lockedTimestamps; // token address -> unlockTimestamp
 
     event TokensLocked(address indexed user, address indexed token, uint256 amount, uint256 lockDuration);
     event TokensUnlocked(address indexed user, address indexed token, uint256 amount);
     event DestinationChanged(address indexed oldDestination, address indexed newDestination);
-
+    event DurationExtended(address indexed user, address indexed token, uint256 lockDuration);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Not the contract owner");
@@ -26,42 +25,51 @@ contract LPLock {
         owner = msg.sender; 
     }
 
-		// Lock LP Tokens for the specified duration
-    function lockTokens(address _token, uint256 _amount, uint256 _lockDuration) external onlyOwner {
-        require(lockedBalances[msg.sender] == 0, "Tokens already locked");
+		// Lock Tokens for the specified duration
+    function lockTokens(address _token, uint256 _amount, uint256 _unlockTimestamp) external onlyOwner {
         require(_amount > 0, "Amount is zero");
-        require(_lockDuration > block.timestamp, "Invalid lock duration");
-        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
-        lockedBalances[msg.sender] = _amount;
-        unlockTimestamp = _lockDuration;
-        lockDuration = _lockDuration;
+        require(_unlockTimestamp > block.timestamp, "Invalid lock duration");
 
-        emit TokensLocked(msg.sender, _token, _amount, lockDuration);
+        // transfer tokens to contract
+        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+
+        lockedBalances[_token] = lockedBalances[_token] + _amount;
+        if (_unlockTimestamp > lockedTimestamps[_token]) {
+          lockedTimestamps[_token] = _unlockTimestamp;
+        }
+
+        emit TokensLocked(msg.sender, _token, _amount, _unlockTimestamp);
     }
 
-		// Unlock LP Tokens after the specified duration
+		// Unlock Tokens after the specified duration
     function unlockTokens(address _token) external onlyOwner {
         require(block.timestamp >= unlockTimestamp, "Tokens cannot be unlocked yet");
-        uint256 amount = lockedBalances[msg.sender];
-        lockedBalances[msg.sender] = 0;
+
+        // transfer tokens
+        uint256 amount = lockedBalances[_token];
         IERC20(_token).safeTransfer(owner, amount);
+
+        // reset lock
+        lockedTimestamps[_token] = 0;
+        lockedBalances[_token] = 0;
 
         emit TokensUnlocked(msg.sender, _token, amount);
     }
-		
-		// Change owner of contract & receiver of LP token(s)
+
+		// Change owner of contract & receiver of token(s)
     function changeDestination(address _newDestination) external onlyOwner {
         require(_newDestination != address(0), "Invalid destination address");
         emit DestinationChanged(owner, _newDestination);
         owner = _newDestination;
     }
 
-		// Extend the LP lock duration (unix timestamp)
-    function extendDuration(uint256 _newLockDuration) external onlyOwner {
-        require(_newLockDuration > unlockTimestamp, "New lock duration must be greater than previous duration");
-        unlockTimestamp = _newLockDuration;
-        lockDuration = _newLockDuration;
+		// Extend the lock duration (unix timestamp)
+    function extendDuration(address _token, uint256 _newTimestamp) external onlyOwner {
+        require(_newTimestamp > block.timestamp, "New lock duration must be greater than previous duration");
+        require(_newTimestamp > lockedTimestamps[_token], "New timestamp shold be greater than old timestamp");
 
-        emit DurationExtended(msg.sender, _newLockDuration);
+        lockedTimestamps[_token] = _newTimestamp;
+
+        emit DurationExtended(msg.sender, _token, _newTimestamp);
     }
 }
