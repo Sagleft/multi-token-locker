@@ -2,12 +2,9 @@
 
 pragma solidity ^0.8.20;
 
-interface IERC20 {
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-    function transfer(address recipient, uint256 amount) external returns (bool);
-}
-
 contract MultiLocker {
+    using SafeERC20 for IERC20;
+
     address public owner;
     mapping(address => uint256) public lockedBalances;   // token address -> amount
     mapping(address => uint256) public lockedTimestamps; // token address -> unlockTimestamp
@@ -27,7 +24,7 @@ contract MultiLocker {
     }
 
     // Lock Tokens for the specified duration
-    function lockTokens(address _token, uint256 _amount, uint256 _unlockTimestamp) external onlyOwner {
+    function lockTokens(address _token, uint256 _amount, uint256 _unlockTimestamp) external payable onlyOwner {
         require(_amount > 0, "Amount is zero");
         require(_unlockTimestamp > block.timestamp, "Invalid lock duration");
 
@@ -45,7 +42,7 @@ contract MultiLocker {
     }
 
     // Unlock Tokens after the specified duration
-    function unlockTokens(address _token) external onlyOwner {
+    function unlockTokens(address _token) external payable onlyOwner {
         require(lockedBalances[_token] > 0, "No tokens are locked for this token");
         require(block.timestamp >= lockedTimestamps[_token], "Tokens cannot be unlocked yet");
 
@@ -62,7 +59,7 @@ contract MultiLocker {
     }
 
     // Change owner of contract & receiver of token(s)
-    function changeDestination(address _newDestination) external onlyOwner {
+    function changeDestination(address _newDestination) external payable onlyOwner {
         require(_newDestination != address(0), "Invalid destination address");
         require(_newDestination != owner, "New destination must be different from current owner");
 
@@ -72,7 +69,7 @@ contract MultiLocker {
     }
 
     // Extend the lock duration (unix timestamp)
-    function extendDuration(address _token, uint256 _newTimestamp) external onlyOwner {
+    function extendDuration(address _token, uint256 _newTimestamp) external payable onlyOwner {
         require(_newTimestamp > block.timestamp, "New lock duration must be greater than previous duration");
         require(_newTimestamp > lockedTimestamps[_token], "New timestamp should be greater than old timestamp");
 
