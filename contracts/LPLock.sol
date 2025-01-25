@@ -33,6 +33,7 @@ contract LPLock {
         // transfer tokens to contract
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
 
+        // increment locked amount
         lockedBalances[_token] = lockedBalances[_token] + _amount;
         if (_unlockTimestamp > lockedTimestamps[_token]) {
           lockedTimestamps[_token] = _unlockTimestamp;
@@ -59,8 +60,11 @@ contract LPLock {
 		// Change owner of contract & receiver of token(s)
     function changeDestination(address _newDestination) external onlyOwner {
         require(_newDestination != address(0), "Invalid destination address");
-        emit DestinationChanged(owner, _newDestination);
+
+        // change contract owner
         owner = _newDestination;
+
+        emit DestinationChanged(owner, _newDestination);
     }
 
 		// Extend the lock duration (unix timestamp)
@@ -68,6 +72,7 @@ contract LPLock {
         require(_newTimestamp > block.timestamp, "New lock duration must be greater than previous duration");
         require(_newTimestamp > lockedTimestamps[_token], "New timestamp shold be greater than old timestamp");
 
+        // change locker duration
         lockedTimestamps[_token] = _newTimestamp;
 
         emit DurationExtended(msg.sender, _token, _newTimestamp);
