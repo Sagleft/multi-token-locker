@@ -3,7 +3,7 @@ Tokens Locker
 
 # Deploy the Contract:
 
-in testnet:
+deploy on testnet:
 
 ```
 truffle migrate --network testnet
