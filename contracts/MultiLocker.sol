@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 
 import "./SafeERC20.sol";
 
-contract LPLock {
+contract MultiLocker {
     using SafeERC20 for IERC20;
 
     address public owner;
