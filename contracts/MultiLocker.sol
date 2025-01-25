@@ -25,21 +25,29 @@ contract MultiLocker {
         owner = msg.sender; 
     }
 
+    function toSmallestUnit(address _token, uint256 _amount) internal view returns (uint256) {
+        IERC20 token = IERC20(_token);
+        uint8 decimals = token.decimals();
+        return _amount * (10 ** uint256(decimals));
+    }
+
 		// Lock Tokens for the specified duration
     function lockTokens(address _token, uint256 _amount, uint256 _unlockTimestamp) external onlyOwner {
         require(_amount > 0, "Amount is zero");
         require(_unlockTimestamp > block.timestamp, "Invalid lock duration");
 
+        uint256 amountInSmallestUnit = toSmallestUnit(_token, _amount);
+
         // transfer tokens to contract
-        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20(_token).safeTransferFrom(msg.sender, address(this), amountInSmallestUnit);
 
         // increment locked amount
-        lockedBalances[_token] = lockedBalances[_token] + _amount;
+        lockedBalances[_token] = lockedBalances[_token] + amountInSmallestUnit;
         if (_unlockTimestamp > lockedTimestamps[_token]) {
           lockedTimestamps[_token] = _unlockTimestamp;
         }
 
-        emit TokensLocked(msg.sender, _token, _amount, _unlockTimestamp);
+        emit TokensLocked(msg.sender, _token, amountInSmallestUnit, _unlockTimestamp);
     }
 
 		// Unlock Tokens after the specified duration
@@ -48,14 +56,14 @@ contract MultiLocker {
         require(block.timestamp >= lockedTimestamps[_token], "Tokens cannot be unlocked yet");
 
         // transfer tokens
-        uint256 amount = lockedBalances[_token];
-        IERC20(_token).safeTransfer(owner, amount);
+        uint256 amountInSmallestUnit = toSmallestUnit(_token, lockedBalances[_token]);
+        IERC20(_token).safeTransfer(owner, amountInSmallestUnit);
 
         // reset lock
         lockedTimestamps[_token] = 0;
         lockedBalances[_token] = 0;
 
-        emit TokensUnlocked(msg.sender, _token, amount);
+        emit TokensUnlocked(msg.sender, _token, amountInSmallestUnit);
     }
 
 		// Change owner of contract & receiver of token(s)
