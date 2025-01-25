@@ -1,8 +1,13 @@
-# LP-Token-Locker
-Cheap LP Tokens Locker
+# multi-token-locker
+Tokens Locker
 
 # Deploy the Contract:
-Use your preferred Ethereum development environment (such as Remix or Truffle) to deploy the contracts to the Ethereum mainnet.
+
+in testnet:
+
+```
+truffle migrate --network testnet
+```
 
 # Interact with the Contract:
 Once deployed, you can setup the contract using the following functions:
