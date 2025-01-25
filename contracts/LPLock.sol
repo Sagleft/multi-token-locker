@@ -44,7 +44,7 @@ contract LPLock {
 
 		// Unlock Tokens after the specified duration
     function unlockTokens(address _token) external onlyOwner {
-        require(block.timestamp >= unlockTimestamp, "Tokens cannot be unlocked yet");
+        require(block.timestamp >= lockedTimestamps[_token], "Tokens cannot be unlocked yet");
 
         // transfer tokens
         uint256 amount = lockedBalances[_token];
