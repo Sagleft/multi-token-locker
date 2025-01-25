@@ -36,7 +36,8 @@ contract MultiLocker {
         require(_amount > 0, "Amount is zero");
         require(_unlockTimestamp > block.timestamp, "Invalid lock duration");
 
-        uint256 amountInSmallestUnit = toSmallestUnit(_token, _amount);
+        uint8 decimals = token.decimals();
+        uint256 amountInSmallestUnit = _amount * (10 ** uint256(decimals));
 
         // transfer tokens to contract
         IERC20(_token).safeTransferFrom(msg.sender, address(this), amountInSmallestUnit);
@@ -56,7 +57,8 @@ contract MultiLocker {
         require(block.timestamp >= lockedTimestamps[_token], "Tokens cannot be unlocked yet");
 
         // transfer tokens
-        uint256 amountInSmallestUnit = toSmallestUnit(_token, lockedBalances[_token]);
+        uint8 decimals = token.decimals();
+        uint256 amountInSmallestUnit = lockedBalances[_token] * (10 ** uint256(decimals));
         IERC20(_token).safeTransfer(owner, amountInSmallestUnit);
 
         // reset lock
