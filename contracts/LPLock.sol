@@ -60,6 +60,7 @@ contract LPLock {
 		// Change owner of contract & receiver of token(s)
     function changeDestination(address _newDestination) external onlyOwner {
         require(_newDestination != address(0), "Invalid destination address");
+        require(_newDestination != owner, "New destination must be different from current owner");
 
         // change contract owner
         owner = _newDestination;
